@@ -147,13 +147,18 @@ class PowerSpectrum(Sensitivity):
         A function that takes a single kperp and an array of kpar, and returns a boolean
         array specifying which of the k's are useable after accounting for systematics.
         that is, it returns False for k's affected by systematics.
+    linear_noise : bool, optional
+        Whether to use the linear noise model for the sensitivity calculation. 
+        The linear model is incorrect and only exists for comparison with the 
+        relation used in La Plante et al. 23. Default is False.
     """
 
     horizon_buffer: tp.Wavenumber = attr.ib(default=0.1 * littleh / un.Mpc)
     foreground_model: str = attr.ib(
-        default="moderate", validator=vld.in_(["moderate", "optimistic"])
+        default="moderate", validator=vld.in_(["moderate", "optimistic", "none"])
     )
     theory_model: TheoryModel = attr.ib()
+    linear_noise: bool = attr.ib(default=False)
 
     systematics_mask: Callable | None = attr.ib(None)
 
@@ -471,6 +476,8 @@ class PowerSpectrum(Sensitivity):
             return horizon + self.horizon_buffer
         elif self.foreground_model in ["optimistic"]:
             return horizon * np.sin(self.observation.observatory.beam.first_null / 2)
+        else:
+            return horizon * 0.0
 
     def _average_sense_to_1d(
         self, sense: dict[tp.Wavenumber, tp.Delta], k1d: tp.Wavenumber | None = None
